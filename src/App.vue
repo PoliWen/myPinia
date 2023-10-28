@@ -18,6 +18,9 @@
           >X</button>
         </li>
       </ul>
+      <count></count>
+      <div style="height: 30px;"></div>
+      <count2></count2>
      
     </div>
   </Layout>
@@ -26,16 +29,16 @@
 <script>
 import Layout from './layouts/default.vue'
 import PiniaLogo from './components/PiniaLogo.vue'
-
-import { defineComponent, ref } from 'vue'
+import Count from './components/count.vue'
+import Count2 from './components/count2.vue'
+import { defineComponent, ref, watch } from 'vue'
 import { useTodosStore } from './stores/useTodosStore'
 
 export default defineComponent({
-  components: { Layout, PiniaLogo },
+  components: { Layout, PiniaLogo, Count, Count2},
 
   setup() {
     const todoStore = useTodosStore()
-    console.log(todoStore)
     const todoItem = ref('')
 
     function addItem() {
@@ -43,6 +46,9 @@ export default defineComponent({
       todoStore.addItem(todoItem.value)
       todoItem.value = ''
     }
+    watch(todoStore.todoItems,(val)=>{
+      console.log(val)
+    })
 
     return {
       todoItem,

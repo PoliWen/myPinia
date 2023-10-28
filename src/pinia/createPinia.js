@@ -1,9 +1,9 @@
 import { ref, effectScope } from 'vue'
-import { piniaSymbol } from 'rootStore'
+import { piniaSymbol } from './rootStore'
 
 export function createPinia(){
     const scope = effectScope()
-    const state = scope.run(()=>ref({})) // 用来存储每个store的state
+    const state = scope.run(()=> ref({})) // 用来存储每个store的state
     // scope.stop() 来停止所有的副作用函数
     const pinia = {
         _s: new Map(), // 用map来收集所有的store

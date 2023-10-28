@@ -1,2 +1,2 @@
-export { createPinia } from "@/pinia";
-export { defineStore } from '@/pinia';
+export { createPinia } from "./createPinia";
+export { defineStore } from './defineStore';

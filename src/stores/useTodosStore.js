@@ -1,14 +1,15 @@
-// import { defineStore } from 'pinia'
-import { defineStore } from '@/myPinia'
+import { defineStore } from '@/pinia'
+// import { defineStore } from '@/myPinia'
 
 export const useTodosStore = defineStore('todos',{
   state: () => ({
     todoItems: []
   }),
   getters: {
-    items: (state) =>
-      state.todoItems.reduce((items, item) => {
+    items(){
+      return this.todoItems.reduce((items, item) => {
         const existItem = items.find((it) => it.name === item)
+        // console.log('existItem',existItem)
         if (!existItem) {
           items.push({ name: item, amount: 1 })
         } else {
@@ -16,10 +17,13 @@ export const useTodosStore = defineStore('todos',{
         }
         return items
       }, [])
+    }
   },
   actions: {
     addItem(name) {
+      console.log('name',name)
       this.todoItems.push(name)
+      console.log('aaaa',this.todoItems)
     },
 
     removeItem(name) {

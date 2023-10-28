@@ -1,17 +1,10 @@
-import { reactive } from 'vue'
-
+import { piniaSymbol } from './rootStore'
 export default ()=>{
-    const _pinia= reactive({})
-    function createStore(name,store){
-        if(!_pinia[name]){
-            _pinia[name] = store
+    const pinia = {
+        _s: new Map(), // 用来存储所有的store
+        install(app){
+            app.provide(piniaSymbol,pinia)
         }
-        return _pinia
     }
-    function install(app){
-        app.provide('_pinia',createStore)
-    }
-    return {
-        install
-    }
+    return pinia
 }
