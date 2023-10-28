@@ -35,6 +35,7 @@ export default defineComponent({
 
   setup() {
     const todoStore = useTodosStore()
+    console.log(todoStore)
     const todoItem = ref('')
 
     function addItem() {

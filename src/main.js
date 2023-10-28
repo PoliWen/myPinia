@@ -1,3 +1,4 @@
+// import { createPinia } from 'pinia'
 import { createPinia } from '@/myPinia'
 import { createApp } from 'vue'
 import App from './App.vue'
