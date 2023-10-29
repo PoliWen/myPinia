@@ -1,6 +1,5 @@
-import { inject, getCurrentInstance, reactive, effectScope, computed, isRef, isReactive, toRefs, watch } from 'vue'
+import { inject, getCurrentInstance, reactive, effectScope, computed, isRef, isReactive, toRefs } from 'vue'
 import { piniaSymbol } from './rootStore'
-import { addSubscription, triggerSubscription } from './subscribe'
 
 function isComputed(v){
     return !!(isRef(v) && v.effect)
@@ -33,21 +32,8 @@ function createSetUpStore(id,setup,pinia,isOption){
             partialStateOrMutatior(pinia.state.value[id])
         }
     }
-    let actionSubscriptions = []
     const partialStore = {
         $patch,
-        $subscribe(callback,options = {}){
-            // 每次状态变化都会执行订阅
-            scope.run(()=> watch(pinia.state.value[id],(state)=>{
-                callback({storeId:id},state)
-            },options))
-        },
-        $onAction: addSubscription.bind(null, actionSubscriptions),
-        $dispose(){
-            scope.stop()
-            actionSubscriptions = []
-            pinia._s.delete(id)
-        }
     }
     const store = reactive(partialStore)   // store 就是一个响应式对象
     const initialState = pinia.state.value[id] // setup默认是没有初始化状态的
@@ -62,31 +48,7 @@ function createSetUpStore(id,setup,pinia,isOption){
 
     function wrapAction(name,action){
         return function(){ 
-            const afterCallbackList = []
-            const onErrorCallbackList = []
-            function after(callback){
-                afterCallbackList.push(callback)
-            }
-            function onError(callback){
-                onErrorCallbackList.push(callback)
-            }
-            let ret
-            try{
-                ret = action.apply(store,arguments)
-                triggerSubscription(afterCallbackList, ret)
-            }catch(e){
-                triggerSubscription(onErrorCallbackList,e)
-            }
-
-            if(ret instanceof Promise){
-                return ret.then((value)=>{
-                   return  triggerSubscription(afterCallbackList, value)
-                }).catch(e=>{
-                    triggerSubscription(onErrorCallbackList,e)
-                    return Promise.resolve(e)
-                })
-            }
-            triggerSubscription(actionSubscriptions,{ after, onError })
+            let ret = action.apply(store,arguments)
             // action 执行后可能是promise
             return ret
         }
@@ -108,14 +70,6 @@ function createSetUpStore(id,setup,pinia,isOption){
     pinia._s.set(id,store)
     Object.assign(store,setupStore)
     console.log('pinia.state.value',pinia.state.value)
-    Object.defineProperty(store,'$state',{
-        get:()=> pinia.state.value[id],
-        set:(state)=> $patch($state => Object.assign($state,state))
-    })
-    store.$id = id
-    pinia._p.forEach(plugin => {
-        plugin({ store })
-    })
     return store
 }
 

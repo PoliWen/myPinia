@@ -33,7 +33,7 @@ function createSetUpStore(id,setup,pinia,isOption){
             partialStateOrMutatior(pinia.state.value[id])
         }
     }
-    let actionSubscriptions = []
+    const actionSubscriptions = []
     const partialStore = {
         $patch,
         $subscribe(callback,options = {}){
@@ -42,12 +42,7 @@ function createSetUpStore(id,setup,pinia,isOption){
                 callback({storeId:id},state)
             },options))
         },
-        $onAction: addSubscription.bind(null, actionSubscriptions),
-        $dispose(){
-            scope.stop()
-            actionSubscriptions = []
-            pinia._s.delete(id)
-        }
+        $onAction: addSubscription.bind(null, actionSubscriptions)
     }
     const store = reactive(partialStore)   // store 就是一个响应式对象
     const initialState = pinia.state.value[id] // setup默认是没有初始化状态的
@@ -70,23 +65,23 @@ function createSetUpStore(id,setup,pinia,isOption){
             function onError(callback){
                 onErrorCallbackList.push(callback)
             }
-            let ret
+            triggerSubscription(actionSubscriptions,{ after, onError })
+
             try{
-                ret = action.apply(store,arguments)
-                triggerSubscription(afterCallbackList, ret)
+                let ret = action.apply(store,arguments)
+                triggerSubscription(afterCallbackList, value)
             }catch(e){
                 triggerSubscription(onErrorCallbackList,e)
             }
 
-            if(ret instanceof Promise){
+            if(ret instanceof promise){
                 return ret.then((value)=>{
-                   return  triggerSubscription(afterCallbackList, value)
+                    triggerSubscription(afterCallbackList, value)
                 }).catch(e=>{
                     triggerSubscription(onErrorCallbackList,e)
-                    return Promise.resolve(e)
                 })
             }
-            triggerSubscription(actionSubscriptions,{ after, onError })
+          
             // action 执行后可能是promise
             return ret
         }
@@ -108,14 +103,6 @@ function createSetUpStore(id,setup,pinia,isOption){
     pinia._s.set(id,store)
     Object.assign(store,setupStore)
     console.log('pinia.state.value',pinia.state.value)
-    Object.defineProperty(store,'$state',{
-        get:()=> pinia.state.value[id],
-        set:(state)=> $patch($state => Object.assign($state,state))
-    })
-    store.$id = id
-    pinia._p.forEach(plugin => {
-        plugin({ store })
-    })
     return store
 }
 

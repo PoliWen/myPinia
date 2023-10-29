@@ -112,10 +112,6 @@ function createSetUpStore(id,setup,pinia,isOption){
         get:()=> pinia.state.value[id],
         set:(state)=> $patch($state => Object.assign($state,state))
     })
-    store.$id = id
-    pinia._p.forEach(plugin => {
-        plugin({ store })
-    })
     return store
 }
 

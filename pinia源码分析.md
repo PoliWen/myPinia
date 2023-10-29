@@ -134,33 +134,83 @@ createPinia的代码功能图
 
 #### $patch
 
-> $path用来改变store的状态
+> 除了用 `store.count++` 直接改变 store，可以调用 `$patch` 方法。它允许你用一个 `state` 的补丁对象在同一时间更改多个属性
+
+```javascript
 
 ```
 
-```
+#### $reset
 
-#### $resetStore
+> $reset用来重置store的状态
 
-> $resetStore用来重置store的状态
-
-```
+```javascript
 
 ```
+
+$reset这个方法支持在vue2中使用，在vue3中有更好的方式处理，直接改变state的值就行了
 
 #### $subScribe
 
+$subScribe用于订阅状态的变化，当转态发生变化需要执行某些操作，可以使用此方法
+
+```javascript
+const partialStore = {
+    $patch,
+    $subscribe(callback,options = {}){
+        // 每次状态变化都会执行订阅
+        scope.run(()=> watch(pinia.state.value[id],(state)=>{
+            callback({storeId:id},state)
+        },options))
+    }
+}
 ```
 
-```
+$subScribe的实现很简单，只是用watch去监听store上的state状态值的变化，然后执行回调函数。
 
 #### $onAction
 
+> 用于监听action的调用，store.$onAction({ags, before, after) => {  })，接受两个参数，before和after，before在action执行之前调用，after在action执行之后调用，可以在action执行之前添加拦截器，进行操作，在action执行之后可以执行回调函数
+
+```javascript
+
+```
+
+实现此方法使用的是发布订阅模式，几乎所有的库里面都有发布订阅者模式
+
 ### $disPose
+
+此方法
+
+#### $state
+
+$state可以用来直接修改store的状态
+
+```javascript
+ Object.defineProperty(store,'$state',{
+     get:()=> pinia.state.value[id],
+     set:(state)=> $patch($state => Object.assign($state,state))
+ })
+```
 
 ### storeToRefs
 
 > 使用storeToRefs可以让store里面的内容解构使用不丢失响应式
+
+```javascript
+import { toRaw, toRef, isRef, isReactive } from 'vue'
+export function storeToRefs(store){
+    store = toRaw()
+    const refs = {}
+    for(let key in store){
+        // 排除对函数的操作
+        if(isRef(value) || isReactive(value)){
+            refs[key] = toRef(store,key)
+        }
+    }
+    return refs
+}
+```
 
 ### pinia的插件机制实现
 
@@ -169,6 +219,22 @@ pinia.use({
 	hello:'hello pinia'
 })
 ```
+
+```javascript
+// createPinia.js
+const _p = []
+const pinia = {
+    use(plugin){
+        _p.push(plugin)
+    },
+    _p,  
+}
+
+// store.js
+
+```
+
+从上满代码发现插件的实现非常简单
 
 ### pinia的在nuxt中的原理
 

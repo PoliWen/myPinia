@@ -3,9 +3,12 @@
       <h2>count 计数器 (options)</h2>
       {{ countStore.count }} / 
       {{ countStore.double }}
+      {{ countStore.hello }}
       <button @click="countStore.increase">Add</button>
       <button @click="disPatch">$patch</button>
       <button @click="reset">$reset</button>
+      <button @click="countStore.$dispose">dispose</button>
+      <button @click="change">$state</button>
     </div>
 </template>
 
@@ -30,11 +33,31 @@ export default defineComponent({
     function reset(){
         countStore.$reset()
     }
+
+    countStore.$subscribe((storeInfo,state)=>{
+        console.log('订阅变化',state.count) // 可以用于进行持久化操作
+    })
+    countStore.$onAction(({ after })=>{
+      console.log('action 开始执行',countStore.count)
+
+      after(()=>{
+        console.log('action 执行完毕',countStore.count)
+      })
+
+      after(()=>{
+        console.log('action 执行完毕第二次',countStore.count)
+      })
+    })
+
+    function change(){
+      countStore.$state = {count: 1000}
+    }
    
     return {
         countStore,
         disPatch,
-        reset
+        reset,
+        change
     }
   },
 })
