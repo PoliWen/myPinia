@@ -7,7 +7,7 @@
 - 在规划vuex下一个迭代版本的时候，发现pinia已经实现了Vuex5的许多想法，因此pinia就作为了Vuex的代替方案
 - pinia使用起来更简单方便，可以像写composable函数一样来写store
 - 更好的typeScript支持
-- 支持vueDevtools，来进行对状态的追踪
+- 支持vueDevtools，对状态的变化进行追踪
 - 废弃了mutations，对于模块的管理更加扁平化
 - 同时支持在vue2和vue3中进行使用，并且支持mapStates，mapGetters，mapActions等方法
 
@@ -121,14 +121,41 @@ app.mount('#app')
 createPinia实现的源码
 
 ```javascript
+import { ref, effectScope } from 'vue'
+import { piniaSymbol } from './rootStore'
 
+export function createPinia(){
+    const scope = effectScope()
+    const state = scope.run(()=> ref({})) // 用来存储每个store的state
+    const _p = []
+    const pinia = {
+        _s: new Map(), // 用map来收集所有的store
+        _e: scope,
+        use(plugin){
+            _p.push(plugin)
+            return this
+        },
+        _p,
+        install(app){
+            app.provide(piniaSymbol,pinia)
+            // 让vue2的组件实例也可以共享
+            app.config.globalProperties.$pinia = pinia
+        },
+        state
+    }
+    return pinia
+}
 ```
 
-createPinia的代码功能图
+createPinia的代码功能导图
 
 ![image-20231028182352034](C:\Users\kingw\AppData\Roaming\Typora\typora-user-images\image-20231028182352034.png)
 
-### pinia的defineStore方法分析
+### pinia的defineStore的实现
+
+```javascript
+
+```
 
 ### pinia的内置方法实现
 
@@ -137,15 +164,46 @@ createPinia的代码功能图
 > 除了用 `store.count++` 直接改变 store，可以调用 `$patch` 方法。它允许你用一个 `state` 的补丁对象在同一时间更改多个属性
 
 ```javascript
+function mergeRectiveObject(target,state){
+    for(let key in state){
+        let oldValue = target[key]
+        let newValue = state[key]
+        if(isObject(oldValue) && isObject(newValue)){
+            mergeRectiveObject(oldValue,newValue) // 递归合并
+        }else{
+            target[key] = newValue
+        }
+    }
+    return target
+}
 
+function $patch(partialStateOrMutatior){
+     if(typeof partialStateOrMutatior === 'object'){
+         // 用新的状态合并老的状态
+         mergeRectiveObject(pinia.state.value[id],partialStateOrMutatior)
+     }else{
+         partialStateOrMutatior(pinia.state.value[id])
+     }
+ }
+const partialStore = {
+    $patch
+}
+const store = reactive(partialStore)   // store 就是一个响应式对象
 ```
+
+$patch的原理就是对象的深度合并
 
 #### $reset
 
 > $reset用来重置store的状态
 
 ```javascript
-
+store.$reset = function(){
+    const initState = state ? state() : {}
+    store.$patch((state)=>{
+        Object.assign(state,initState)
+    })
+}
 ```
 
 $reset这个方法支持在vue2中使用，在vue3中有更好的方式处理，直接改变state的值就行了
@@ -170,7 +228,7 @@ $subScribe的实现很简单，只是用watch去监听store上的state状态值�
 
 #### $onAction
 
-> 用于监听action的调用，store.$onAction({ags, before, after) => {  })，接受两个参数，before和after，before在action执行之前调用，after在action执行之后调用，可以在action执行之前添加拦截器，进行操作，在action执行之后可以执行回调函数
+> 用于监听action的调用，store.$onAction({after，error}) => {  })，在action执行完成之后调用after回调函数
 
 ```javascript
 
@@ -180,7 +238,17 @@ $subScribe的实现很简单，只是用watch去监听store上的state状态值�
 
 ### $disPose
 
-此方法
+> 此方法用来注销store
+
+```javascript
+const partialStore = {
+    $dispose(){
+        scope.stop()
+        actionSubscriptions = []
+        pinia._s.delete(id)
+    }
+}
+```
 
 #### $state
 
@@ -335,6 +403,3 @@ export const PiniaVuePlugin: Plugin = function (_Vue) {
 ### pinia的在nuxt中的原理
 
 ### pinia在vueDevtools中被追踪的实现原理
-
-
-
