@@ -1,5 +1,5 @@
 import { inject, getCurrentInstance, reactive, effectScope, computed, isRef, isReactive, toRefs, watch } from 'vue'
-import { piniaSymbol } from './rootStore'
+import { piniaSymbol,setActivePinia, activePinia } from './rootStore'
 import { addSubscription, triggerSubscription } from './subscribe'
 
 function isComputed(v){
@@ -171,7 +171,9 @@ export function defineStore(idOrOptions,setup){
     function useStore(){
         // 在这里拿到的store，应该是同一个
         let instance = getCurrentInstance()
-        const pinia = instance && inject(piniaSymbol)
+        let pinia = instance && inject(piniaSymbol)
+        if (pinia) setActivePinia(pinia)
+        pinia = activePinia
         if(!pinia._s.has(id)){ // 第一次useStore
             if(isSetUpStore){
                 createSetUpStore(id,setup,pinia)

@@ -13,16 +13,19 @@
 </template>
 
 <script>
-
+import { useRouter } from 'vue-router'
 import { defineComponent, ref } from 'vue'
-import { useCountStore } from '../stores/useCountStore'
+import { useCountStore } from '@/stores'
+
+
+// router.beforeEach((to,from,next)=>{
+//     console.log(11111)
+//     next()
+// })
 
 export default defineComponent({
-
   setup() {
     const countStore = useCountStore()
-    console.log('countStore',countStore)
-
     function disPatch(){
         countStore.$patch((state)=>{
             state.count = 1000

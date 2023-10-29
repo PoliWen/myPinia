@@ -1,5 +1,5 @@
 import { ref, effectScope } from 'vue'
-import { piniaSymbol } from './rootStore'
+import { piniaSymbol,setActivePinia } from './rootStore'
 
 export function createPinia(){
     const scope = effectScope()
@@ -17,6 +17,7 @@ export function createPinia(){
         install(app){
             // pinia要去收集所有store的信息，并且可以进行卸载store
             // 如何让所有的store都能获取到这个对象
+            setActivePinia(pinia)
             app.provide(piniaSymbol,pinia)
 
             // 让vue2的组件实例也可以共享

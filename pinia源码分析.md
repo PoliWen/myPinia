@@ -197,6 +197,27 @@ $state可以用来直接修改store的状态
 
 > 使用storeToRefs可以让store里面的内容解构使用不丢失响应式
 
+回顾一下toRef与toRefs的实现
+
+```javascript
+function toRef(obj,key){
+	const wrapper = {
+        get value(){
+            return obj[key]
+        }
+    }
+    return wrapper
+}
+
+function toRefs(obj){
+    const ret = {}
+    for(const key in obj){
+        ret[key] = toRef(obj,key)
+    }
+    return ret
+}
+```
+
 ```javascript
 import { toRaw, toRef, isRef, isReactive } from 'vue'
 export function storeToRefs(store){
@@ -212,11 +233,13 @@ export function storeToRefs(store){
 }
 ```
 
+通过上面的代码我们发现storeToRefs的实现跟toRefs的实现一样，只是排除了对函数的处理
+
 ### pinia的插件机制实现
 
 ```javascript
-pinia.use({
-	hello:'hello pinia'
+pinia.use((store) => {
+    store.hello = 'Hello pinia'
 })
 ```
 
@@ -231,12 +254,16 @@ const pinia = {
 }
 
 // store.js
-
+function createSetUpStore(){
+     const store = reactive({})
+     pinia._p.forEach(plugin => {
+         plugin({ store })
+     })
+     return store
+}
 ```
 
-从上满代码发现插件的实现非常简单
-
-### pinia的在nuxt中的原理
+从上面代码发现插件的实现非常简单
 
 ### vue2中插件的实现原理
 
@@ -303,4 +330,11 @@ export const PiniaVuePlugin: Plugin = function (_Vue) {
 
 实现原理**获取Vue实例，通过mixin实现数据共享**，vuex也是通过同样的原理进行实现的
 
+以下内容为拓展内容
+
+### pinia的在nuxt中的原理
+
 ### pinia在vueDevtools中被追踪的实现原理
+
+
+

@@ -10,7 +10,7 @@
 <script>
 
 import { defineComponent, ref } from 'vue'
-import { useCountStore2 } from '../stores/useCountStore2'
+import { useCountStore2 } from '@/stores'
 
 export default defineComponent({
 
