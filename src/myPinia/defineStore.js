@@ -1,7 +1,7 @@
 import { reactive, computed, toRef, inject, ref} from 'vue'
 import { piniaSymbol } from './rootStore'
 function defineStore (
-    name,
+    id,
     {
         state,
         getters,
@@ -39,10 +39,10 @@ function defineStore (
     }
     return ()=>{
         const pinia = inject(piniaSymbol);
-        if(!pinia._s.has(name)){
-            pinia._s.set(name,store)
+        if(!pinia._s.has(id)){
+            pinia._s.set(id,store)
         }
-        const _store = pinia._s.get(name)
+        const _store = pinia._s.get(id)
         return _store
     }
 }

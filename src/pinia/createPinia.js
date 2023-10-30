@@ -20,8 +20,7 @@ export function createPinia(){
             setActivePinia(pinia)
             app.provide(piniaSymbol,pinia)
 
-            // 让vue2的组件实例也可以共享
-            app.config.globalProperties.$pinia = pinia
+            app.config.globalProperties.$pinia = pinia  // 设置全局属性$pinia
         },
         state
     }

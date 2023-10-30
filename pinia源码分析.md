@@ -1,3 +1,5 @@
+
+
 ## pinia实现原理以及源码分析
 
 > pinia是vue的专属状态管理器，允许跨组件或者跨页面共享数据，pinia在西班牙语中是菠萝的意思，菠萝花是一组各自独立的花朵，它们共同结合在一起，形成一个菠萝这个水果，与store类似，每一个都是独立的，但又是相互关联的。
@@ -11,11 +13,55 @@
 - 废弃了mutations，对于模块的管理更加扁平化
 - 同时支持在vue2和vue3中进行使用，并且支持mapStates，mapGetters，mapActions等方法
 
-> vuex : store.state.a.b.c.xx 
->
-> pinia : useStore.xxx ，producStore.xxx
->
-> 问题为什么vuex中有mutation和actions
+### pinia的基本使用
+
+```javascript
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+
+const pinia = createPinia()
+const app = createApp(App)
+
+app.use(pinia)
+app.mount('#app')
+```
+
+定义store支持两种方式，一种是options的方式，一种是composables的方式
+
+```javascript
+export const useCountStore('countStore',{
+    state:()=>{
+        count:0
+    },
+    getters:()=>{
+        double(){
+            return this.count*2
+        }
+    }，
+    actions:{
+    	increase(){
+    		this.count++
+		}
+    }
+})
+```
+
+```javascript
+export const useCountStore = defineStore('countStore',()=>{
+    const count = ref(0)
+    function increase(){
+        count.value++
+    }
+    const double = computed(()=> count.value * 2)
+
+    return {
+        count,
+        double,
+        increase
+    }
+})
+```
 
 ### 一个最简版本的pinia实现
 
@@ -36,7 +82,7 @@ export default ()=>{
 import { reactive, computed, toRef, inject} from 'vue'
 import { piniaSymbol } from './rootStore'
 function defineStore (
-    name,
+    id,
     {
         state,
         getters,
@@ -62,24 +108,24 @@ function defineStore (
     }
     
     // 改变this指向
-    function wrapAction(name){
+    function wrapAction(methodName){
         return function(){
-            actions[name].apply(store.$state,arguments)
+            actions[methodName].apply(store.$state,arguments)
         }
     }
 
     // 将actions挂载到store上
     if(actions && Object.keys(actions).length > 0){
-        for(let method in actions){
-            store[method] = wrapAction(method)
+        for(let methodName in actions){
+            store[methodName] = wrapAction(methodName)
         }
     }
     return ()=>{
         const pinia = inject(piniaSymbol);
-        if(!pinia._s.has(name)){
-            pinia._s.set(name,store)
+        if(!pinia._s.has(id)){
+            pinia._s.set(id,store)
         }
-        const _store = pinia._s.get(name)
+        const _store = pinia._s.get(id)
         return _store
     }
 }
@@ -88,7 +134,7 @@ export default defineStore
 
 pinia能实现在不同的组件状态共享，主要是因为每个store都是一个单例模式
 
-vueuse的createSharedComposable也是一个单例模式，也能用来实现状态共享的问题，会员中心用到了很多这个方法
+vueuse的createSharedComposable也是一个单例模式，也能用来实现状态共享的问题
 
 ```javascript
 export function createSharedComposable(composable){
@@ -104,20 +150,6 @@ export function createSharedComposable(composable){
 
 ### pinia源码的createPinia方法分析
 
-pinia的基本使用
-
-```javascript
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import App from './App.vue'
-
-const pinia = createPinia()
-const app = createApp(App)
-
-app.use(pinia)
-app.mount('#app')
-```
-
 createPinia实现的源码
 
 ```javascript
@@ -127,11 +159,11 @@ import { piniaSymbol } from './rootStore'
 export function createPinia(){
     const scope = effectScope()
     const state = scope.run(()=> ref({})) // 用来存储每个store的state
-    const _p = []
+    const _p = []  // 收集插件
     const pinia = {
         _s: new Map(), // 用map来收集所有的store
         _e: scope,
-        use(plugin){
+        use(plugin){  // 用来注册插件
             _p.push(plugin)
             return this
         },
@@ -153,7 +185,203 @@ createPinia的代码功能导图
 
 ### pinia的defineStore的实现
 
+第一步，先分析入参和返回结果
+
+defineStore的入参有三种形式
+
 ```javascript
+const store = defineStore('id',{
+    state:()=>{},
+    getter:()=>{},
+    actions:{}
+})
+const store = defineStore({ // options入参
+    id,
+    state:()=>{},
+    getter:()=>{},
+    actions:{}
+})
+const store = defineStore('id',()=>{state,getters,actions}) // setup的形式入参
+```
+
+处理入参
+
+```javascript
+// id + options
+// options
+// id + setup方法
+export function defineStore(idOrOptions,setup){
+    let id
+    let options
+    if(typeof idOrOptions === 'string'){
+        id = idOrOptions
+        options = setup
+    }else{
+        options = idOrOptions;
+        id = idOrOptions.id
+    }
+    const isSetUpStore = typeof setup === 'function'
+}
+```
+
+处理返回函数
+
+```javascript
+
+// id + options
+// options
+// name + setup
+export function defineStore(idOrOptions,setup){
+    let id
+    let options
+    if(typeof idOrOptions === 'string'){
+        id = idOrOptions
+        options = setup
+    }else{
+        options = idOrOptions;
+        id = idOrOptions.id
+    }
+    // setUp可能是一个函数
+    const isSetUpStore = typeof setup === 'function'
+    
+    function useStore(){
+        let instance = getCurrentInstance()
+        const pinia = instance && inject(piniaSymbol)
+        if(!pinia._s.has(id)){ // 第一次useStore
+            if(isSetUpStore){
+                createSetUpStore(id,setup,pinia)
+            }else{
+                createOptionsStore(id,options,pinia)
+            }
+        }
+        const store = pinia._s.get(id)
+        return store
+    }
+    return useStore
+}
+```
+
+这里处理options的定义方式，和setup也就是composables定义的方式是不一样的，处理options使用createOptionsStore
+
+```javascript
+function createOptionsStore(id,options,pinia){
+    const { state, actions, getters } = options
+    let scope;
+    const store = reactive({})   // store 就是一个响应式对象
+  
+    function setup(){  // 对用户传递的state，actions，getters做处理
+       const localState =  pinia.state.value[id] = state ? state() : {}
+       // getters
+       return Object.assign(
+        localState, // 用户的状态
+        actions,    // 用户的动作
+        // 使用computed对getters进行封装
+        Object.keys(getters || {}).reduce((memo,name)=>{
+            memo[name] = computed(()=> {
+                const store = pinia._s.get(id)
+                return getters[name].apply(store,localState)
+            })
+            return memo
+        },{}))
+    }
+
+    const setupStore = pinia._e.run(()=>{
+        scope = effectScope()
+        return scope.run(()=> setup() )
+    })
+
+    function wrapAction(name,action){
+        return function(){ 
+            let ret = action.apply(store,arguments)
+            // action 执行后可能是promise
+            return ret
+        }
+    }
+    for(let key in setupStore){
+        const prop = setupStore[key]
+        if(typeof prop === 'function'){
+            setupStore[key] = wrapAction(key,prop) // 函数劫持
+        }
+        if((isRef(prop) && !isComputed(prop)) || isReactive(prop)){
+            if(!isOption){
+                console.log('props',key)
+                pinia.state.value[id][key] = prop
+            }
+        }
+    }
+    // pinia._e.stop() // 停止全部
+    // scope.stop() // 停止自己， 自己可以控制自己的死活，父亲可以控制所有的死活
+    pinia._s.set(id,store)
+    Object.assign(store,setupStore)
+    return store
+}
+
+```
+
+处理setupStore使用createSetUpStore
+
+```javascript
+function createSetUpStore(id,setup,pinia,isOption){
+    let scope;
+    const store = reactive({})   // store 就是一个响应式对象
+    const initialState = pinia.state.value[id] // setup默认是没有初始化状态的
+    if(!initialState && !isOption){
+        pinia.state.value[id] = {}
+    }
+
+    const setupStore = pinia._e.run(()=>{
+        scope = effectScope()
+        return scope.run(()=> setup() )
+    })
+
+    function wrapAction(name,action){
+        return function(){ 
+            let ret = action.apply(store,arguments)
+            // action 执行后可能是promise
+            return ret
+        }
+    }
+    for(let key in setupStore){
+        const prop = setupStore[key]
+        if(typeof prop === 'function'){
+            setupStore[key] = wrapAction(key,prop) // 函数劫持
+        }
+        if((isRef(prop) && !isComputed(prop)) || isReactive(prop)){
+            if(!isOption){
+                console.log('props',key)
+                pinia.state.value[id][key] = prop
+            }
+        }
+    }
+    // pinia._e.stop() // 停止全部
+    // scope.stop() // 停止自己， 自己可以控制自己的死活，父亲可以控制所有的死活
+    pinia._s.set(id,store)
+    Object.assign(store,setupStore)
+    console.log('pinia.state.value',pinia.state.value)
+    return store
+}
+
+
+function createOptionsStore(id,options,pinia){
+    const { state, actions, getters } = options
+   
+    function setup(){  // 对用户传递的state，actions，getters做处理
+       const localState =  pinia.state.value[id] = state ? state() : {}
+       // getters
+       return Object.assign(
+        localState, // 用户的状态
+        actions,    // 用户的动作
+        // 使用computed对getters进行封装
+        Object.keys(getters || {}).reduce((memo,name)=>{
+            memo[name] = computed(()=> {
+                const store = pinia._s.get(id)
+                return getters[name].apply(store,localState)
+            })
+            return memo
+        },{}))
+    }
+    return createSetUpStore(id,setup,pinia,true)
+}
 
 ```
 
@@ -230,11 +458,67 @@ $subScribe的实现很简单，只是用watch去监听store上的state状态值�
 
 > 用于监听action的调用，store.$onAction({after，error}) => {  })，在action执行完成之后调用after回调函数
 
-```javascript
+要实现此功能很明显是使用的发布订阅者模式，因此需要实现一个发布订阅的工具函数
 
+```javascript
+export function addSubscription(subscriptions,callback){
+    subscriptions.push(callback)
+    const removeSubscription = ()=>{
+        const index = removeSubscriptions.indexof(callback)
+        idx > -1 && subscriptions.splice(idx,1)
+    }
+    return removeSubscription
+}
+export function triggerSubscription(subscriptions,...args){
+    subscriptions.slice().forEach(cb => cb(...args))  
+    // 这里的slice(), 没有传递参数，只返回一个原数组的浅拷贝，这是常见的用法，用来遍历数组的副本，而不修改原始数据
+}
 ```
 
-实现此方法使用的是发布订阅模式，几乎所有的库里面都有发布订阅者模式
+```javascript
+let actionSubscriptions = []
+const partialStore = {
+   $onAction: addSubscription.bind(null, actionSubscriptions),
+}
+const store = reactive(partialStore)
+```
+
+在执行$onAction的时候，先将方法订阅添加到actionSubscriptions这个对象里面，在执行actions动作的时候进行触发
+
+```javascript
+function wrapAction(name,action){
+    return function(){ 
+        const afterCallbackList = []
+        const onErrorCallbackList = []
+        function after(callback){
+            afterCallbackList.push(callback)
+        }
+        function onError(callback){
+            onErrorCallbackList.push(callback)
+        }
+        triggerSubscription(actionSubscriptions,{ after, onError })
+        
+        let ret
+        try{
+            ret = action.apply(store,arguments)
+            triggerSubscription(afterCallbackList, ret)
+        }catch(e){
+            triggerSubscription(onErrorCallbackList,e)
+        }
+
+        if(ret instanceof Promise){
+            return ret.then((value)=>{
+                return  triggerSubscription(afterCallbackList, value)
+            }).catch(e=>{
+                triggerSubscription(onErrorCallbackList,e)
+                return Promise.resolve(e)
+            })
+        }
+        // action 执行后可能是promise
+        return ret
+    }
+}
+```
 
 ### $disPose
 
@@ -396,10 +680,4 @@ export const PiniaVuePlugin: Plugin = function (_Vue) {
 }
 ```
 
-实现原理**获取Vue实例，通过mixin实现数据共享**，vuex也是通过同样的原理进行实现的
-
-以下内容为拓展内容
-
-### pinia的在nuxt中的原理
-
-### pinia在vueDevtools中被追踪的实现原理
+实现原理，**获取Vue实例，通过mixin实现数据共享**，vuex也是通过同样的原理进行实现的
