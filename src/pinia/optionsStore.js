@@ -7,7 +7,9 @@ function isComputed(v){
 
 function createOptionsStore(id,options,pinia){
     const { state, actions, getters } = options
-   
+    let scope;
+    const store = reactive({})   // store 就是一个响应式对象
+  
     function setup(){  // 对用户传递的state，actions，getters做处理
        const localState =  pinia.state.value[id] = state ? state() : {}
        // getters
@@ -22,13 +24,6 @@ function createOptionsStore(id,options,pinia){
             })
             return memo
         },{}))
-    }
-
-    let scope;
-    const store = reactive({})   // store 就是一个响应式对象
-    const initialState = pinia.state.value[id] // setup默认是没有初始化状态的
-    if(!initialState && !isOption){
-        pinia.state.value[id] = {}
     }
 
     const setupStore = pinia._e.run(()=>{
@@ -57,9 +52,8 @@ function createOptionsStore(id,options,pinia){
     }
     // pinia._e.stop() // 停止全部
     // scope.stop() // 停止自己， 自己可以控制自己的死活，父亲可以控制所有的死活
-    pinia._s.set(id,store)
     Object.assign(store,setupStore)
-    console.log('pinia.state.value',pinia.state.value)
+    pinia._s.set(id,store)
     return store
 }
 

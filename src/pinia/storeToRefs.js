@@ -1,6 +1,6 @@
 import { toRaw, toRef, isRef, isReactive } from 'vue'
 export function storeToRefs(store){
-    store = toRaw()
+    store = toRaw(store)
     const refs = {}
     for(let key in store){
         // 跳过对函数的操作

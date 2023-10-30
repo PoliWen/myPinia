@@ -40,6 +40,7 @@ export default defineComponent({
     countStore.$subscribe((storeInfo,state)=>{
         console.log('订阅变化',state.count) // 可以用于进行持久化操作
     })
+
     countStore.$onAction(({ after })=>{
       console.log('action 开始执行',countStore.count)
 
@@ -53,7 +54,7 @@ export default defineComponent({
     })
 
     function change(){
-      countStore.$state = {count: 1000}
+      countStore.$state = { count: 1000 }
     }
    
     return {

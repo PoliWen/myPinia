@@ -15,21 +15,13 @@ export function createPinia(){
         },
         _p,
         install(app){
-            // pinia要去收集所有store的信息，并且可以进行卸载store
-            // 如何让所有的store都能获取到这个对象
+            pinia._a = app
             setActivePinia(pinia)
             app.provide(piniaSymbol,pinia)
-
             app.config.globalProperties.$pinia = pinia  // 设置全局属性$pinia
         },
+        _a: null,
         state
     }
     return pinia
 }
-/*
-总结：
-createPinia,默认具备一个install方法
-_s 用来存储 id->store
-state 用来存储所有的状态
-_e 用来停止所有的状态
-*/

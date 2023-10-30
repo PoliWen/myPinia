@@ -9,7 +9,6 @@ export const useTodosStore = defineStore('todos',{
     items(){
       return this.todoItems.reduce((items, item) => {
         const existItem = items.find((it) => it.name === item)
-        // console.log('existItem',existItem)
         if (!existItem) {
           items.push({ name: item, amount: 1 })
         } else {
@@ -21,9 +20,7 @@ export const useTodosStore = defineStore('todos',{
   },
   actions: {
     addItem(name) {
-      console.log('name',name)
       this.todoItems.push(name)
-      console.log('aaaa',this.todoItems)
     },
 
     removeItem(name) {

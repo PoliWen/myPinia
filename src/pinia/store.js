@@ -70,6 +70,7 @@ function createSetUpStore(id,setup,pinia,isOption){
             function onError(callback){
                 onErrorCallbackList.push(callback)
             }
+            triggerSubscription(actionSubscriptions,{ after, onError })
             let ret
             try{
                 ret = action.apply(store,arguments)
@@ -86,7 +87,6 @@ function createSetUpStore(id,setup,pinia,isOption){
                     return Promise.resolve(e)
                 })
             }
-            triggerSubscription(actionSubscriptions,{ after, onError })
             // action 执行后可能是promise
             return ret
         }

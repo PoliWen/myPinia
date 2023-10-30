@@ -36,6 +36,7 @@
   
   export default defineComponent({
     components: { Layout, PiniaLogo, Count, Count2},
+    // components: { Layout, PiniaLogo},
     beforeRouteEnter(){
       // console.log('xxxxxxxxxxxxxx')
     },

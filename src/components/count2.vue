@@ -3,6 +3,7 @@
       <h2>count 计数器(composables)</h2>
       {{ countStore2.count }} / 
       {{ countStore2.double }}
+      {{ countStore2.hello }}
       <button @click="countStore2.increase">Add</button>
     </div>
 </template>
