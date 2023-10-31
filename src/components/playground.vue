@@ -19,27 +19,24 @@
             >X</button>
           </li>
         </ul>
-        <count></count>
+        <!-- <count></count>
         <div style="height: 30px;"></div>
-        <count2></count2>
+        <count2></count2> -->
       </div>
     </Layout>
-  </template>
-  
-  <script>
+</template>
+
+<script>
   import Layout from '@/layouts/default.vue'
   import PiniaLogo from '@/components/PiniaLogo.vue'
-  import Count from '@/components/count.vue'
-  import Count2 from '@/components/count2.vue'
+  // import Count from '@/components/count.vue'
+  // import Count2 from '@/components/count2.vue'
   import { defineComponent, ref, watch } from 'vue'
   import { useTodosStore } from '@/stores/useTodosStore'
   
   export default defineComponent({
-    components: { Layout, PiniaLogo, Count, Count2},
-    // components: { Layout, PiniaLogo},
-    beforeRouteEnter(){
-      // console.log('xxxxxxxxxxxxxx')
-    },
+    // components: { Layout, PiniaLogo, Count, Count2},
+    components: { Layout, PiniaLogo},
     setup() {
       const todoStore = useTodosStore()
       const todoItem = ref('')
@@ -60,20 +57,19 @@
       }
     },
   })
-  </script>
-  
-  <style scoped>
-  h2{
-    padding-bottom: 10px;
-  }
-  img {
-    width: 200px;
-  }
-  
-  button,
-  input {
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-  </style>
-  
+</script>
+
+<style scoped>
+h2{
+  padding-bottom: 10px;
+}
+img {
+  width: 200px;
+}
+
+button,
+input {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+</style>

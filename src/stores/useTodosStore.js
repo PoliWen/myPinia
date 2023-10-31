@@ -1,5 +1,5 @@
-import { defineStore } from '@/pinia'
-// import { defineStore } from '@/myPinia'
+// import { defineStore } from '@/pinia'
+import { defineStore } from '@/myPinia'
 
 export const useTodosStore = defineStore('todos',{
   state: () => ({

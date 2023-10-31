@@ -51,7 +51,7 @@ function createOptionsStore(id,options,pinia){
         }
     }
     // pinia._e.stop() // 停止全部
-    // scope.stop() // 停止自己， 自己可以控制自己的死活，父亲可以控制所有的死活
+    // scope.stop() // 停止自己
     Object.assign(store,setupStore)
     pinia._s.set(id,store)
     return store
@@ -61,7 +61,7 @@ function createOptionsStore(id,options,pinia){
 
 // id + options
 // options
-// name + setup
+// id + setup
 
 export function defineStore(idOrOptions,setup){
     let id
@@ -74,12 +74,12 @@ export function defineStore(idOrOptions,setup){
         id = idOrOptions.id
     }
     const isSetUpStore = typeof setup === 'function'
-    // setUp可能是一个函数
+
     function useStore(){
         // 在这里拿到的store，应该是同一个
         let instance = getCurrentInstance()
         const pinia = instance && inject(piniaSymbol)
-        if(!pinia._s.has(id)){ // 第一次useStore
+        if(!pinia._s.has(id)){
             if(isSetUpStore){
                 createSetUpStore(id,setup,pinia)
             }else{

@@ -23,15 +23,15 @@ export function defineStore (
             store[getter] = computed(getters[getter].bind(store,store))
         }
     }
-    function wrapAction(methodName){
-        return function(){
-            actions[methodName].apply(store,arguments)
-        }
+    function wrapAction(methodName,...args){
+        // 方便在这里进行功能拓展
+        return actions[methodName].bind(store,...args)
     }
 
     // 将actions挂载到store上
     if(actions && Object.keys(actions).length > 0){
         for(let methodName in actions){
+            // store[methodName] = actions[methodName].bind(store)
             store[methodName] = wrapAction(methodName)
         }
     }
